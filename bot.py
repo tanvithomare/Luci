@@ -52,6 +52,7 @@ CHANNELS = {
     'ticket_category': 1481105087312171290, # Category ID for ticket channels
     'logs': 1481073417888338090, # Channel ID for logs
     'verify': 1466886987884789864, # Channel ID for verification 
+    'colors': 1466887154197205033, # Channel ID for colors
 }
 EMOJI_TO_ROLE = {
     #Gender
@@ -93,8 +94,19 @@ EMOJI_TO_ROLE = {
     '✅':[1481818544000864276], #DMs Open
     '❓':[1481818649160319006], #Ask to DM
     '❌':[1481818701031276797], #DMs Closed
+    #Colors
+    '🔴':[1491477305871302747], #Red
+    '🟢':[1491479570644340857], #Green
+    '🔵':[1491477612953079949], #Blue
+    '🟡':[1491477686152073226], #Yellow
+    '🟣':[1491477817819660379], #Purple
+    '⚫':[1491478749978562743], #Black
+    '⚪':[1491478853149921439], #White
+    '🟤':[1491478914554531850], #Brown
+    '🟠':[1491478666293809332], #Orange
+    '🟥':[1491478582248345692], #Pink
 }
-AUTOASSIGNED_ROLES = [1465861141686390784],[1466883673478402172],[1466884441560453263], [1466884272320155668], 
+AUTOASSIGNED_ROLES = [1465861141686390784, 1466883673478402172, 1466884441560453263, 1466884272320155668]
 STAFF_ROLES= [1465861085952217211]
 def is_staff():
     async def predicate(ctx):
@@ -146,8 +158,8 @@ async def on_raw_reaction_add(payload):
     if payload.user_id == bot.user.id:
         return
 
-    # Only process reactions in the roles channel
-    if payload.channel_id != CHANNELS['roles']:
+    # Only process reactions in the roles or colors channel
+    if payload.channel_id != CHANNELS['roles'] and payload.channel_id != CHANNELS['colors']:
         return
 
     print(f'\n🔍 Reaction ADDED by user {payload.user_id}')
@@ -220,8 +232,8 @@ async def on_raw_reaction_add(payload):
 @bot.event
 async def on_raw_reaction_remove(payload):
     """Handle reaction remove - remove roles"""
-    # Only process reactions in the roles channel
-    if payload.channel_id != CHANNELS['roles']:
+    # Only process reactions in the roles or colors channel
+    if payload.channel_id != CHANNELS['roles'] and payload.channel_id != CHANNELS['colors']:
         return
 
     print(f'\n🔍 Reaction REMOVED by user {payload.user_id}')
@@ -576,6 +588,48 @@ async def roles(ctx):
         await ctx.send("Roles channel not found.")
 @bot.command()
 @is_staff()
+async def colors(ctx):
+    channel = bot.get_channel(CHANNELS['colors'])
+    if channel:
+        colors_banner = os.path.join(ASSETS_DIR, 'Colors.png')
+        if os.path.exists(colors_banner):
+            try:
+                # Create a file object from local image
+                with open(colors_banner, 'rb') as f:
+                    picture = discord.File(f, filename='Colors.png')
+                
+                # Create embed with local file as image
+                colors_banner = discord.Embed(color=0x0099ff)
+                colors_banner.set_image(url="attachment://Colors.png")
+                await channel.send(file=picture, embed=colors_banner)
+            except Exception as e:
+                print(f"Error sending top banner: {e}")
+                await channel.send("Failed to load banner image.")
+        colors_embed = discord.Embed(
+            title="Color Roles",
+            description="Select your preferred color role:",
+            color=0x0099ff
+        )
+        colors_embed.add_field(name="🔴 Red", value="A vibrant red color role.", inline=True)
+        colors_embed.add_field(name="🟢 Green", value="A fresh green color role.", inline=True)
+        colors_embed.add_field(name="🔵 Blue", value="A calming blue color role.", inline=True)
+        colors_embed.add_field(name="🟡 Yellow", value="A bright yellow color role.", inline=True)
+        colors_embed.add_field(name="🟣 Purple", value="A royal purple color role.", inline=True)
+        colors_embed.add_field(name="⚫ Black", value="A sleek black color role.", inline=True)
+        colors_embed.add_field(name="⚪ White", value="A clean white color role.", inline=True)
+        colors_embed.add_field(name="🟤 Brown", value="A warm brown color role.", inline=True)
+        colors_embed.add_field(name="🟠 Orange", value="A bold orange color role.", inline=True)
+        colors_embed.add_field(name="🟥 Pink", value="A soft pink color role.", inline=True)
+        await channel.send(embed=colors_embed)
+        colors_embed.set_footer(text="You can change your color role at any time by clicking the reactions.")
+        colors_emojis = ['🔴', '🟢', '🔵', '🟡', '🟣', '⚫', '⚪', '🟤', '🟠', '🟥']
+        for emoji in colors_emojis:
+            await channel.last_message.add_reaction(emoji)
+    else:
+        await ctx.send("Colors channel not found.")
+
+@bot.command()
+@is_staff()
 async def verify(ctx):
     channel = bot.get_channel(CHANNELS['verify'])
     if channel:
@@ -640,6 +694,74 @@ async def reminder(ctx, time: int, *, message: str):
     await ctx.send(f"⏰ Reminder set for {time} seconds from now!")
     await discord.utils.sleep_until(discord.utils.utcnow() + discord.timedelta(seconds=time))
     await ctx.send(f"⏰ Reminder: {message}")
+@bot.command()
+async def slap(ctx, user: discord.Member):
+    """Slap another user with a random image."""
+    slap_images = [
+        "https://media.giphy.com/media/Gf3AUz3eBNbTW/giphy.gif",
+        "https://media.giphy.com/media/mEtSQlxqBtWWA/giphy.gif",
+        "https://media.giphy.com/media/jLeyZWgtwgr2U/giphy.gif",
+        "https://media.giphy.com/media/3XlEk2RxPS1m8/giphy.gif",
+        "https://media.giphy.com/media/2M2RtPm8T2kO/giphy.gif"
+    ]
+    selected_image = random.choice(slap_images)
+    embed = discord.Embed(description=f"{ctx.author.mention} slaps {user.mention}!")
+    embed.set_image(url=selected_image)
+    await ctx.send(embed=embed)
+@bot.command()
+async def hug(ctx, user: discord.Member):
+    """Hug another user with a random image."""
+    hug_images = [
+        "https://media.giphy.com/media/l2QDM9Jnim1YVILXa/giphy.gif",
+        "https://media.giphy.com/media/od5H3PmEG5EVq/giphy.gif",
+        "https://media.giphy.com/media/143v0Z4767T15e/giphy.gif",
+        "https://media.giphy.com/media/sUIZWMnfd4Mb6/giphy.gif",
+        "https://media.giphy.com/media/wnsgren9NtITS/giphy.gif"
+    ]
+    selected_image = random.choice(hug_images)
+    embed = discord.Embed(description=f"{ctx.author.mention} hugs {user.mention}!")
+    embed.set_image(url=selected_image)
+    await ctx.send(embed=embed)
+@bot.command()
+async def kiss(ctx, user: discord.Member):
+    """Kiss another user with a random image."""
+    kiss_images = [
+        "https://media.giphy.com/media/G3va31oEEnIkM/giphy.gif",
+        "https://media.giphy.com/media/KH1CTZtw1iP3W/giphy.gif",
+        "https://media.giphy.com/media/11k3oaUjSlFR4I/giphy.gif",
+        "https://media.giphy.com/media/10zzX8EQZy2u4/giphy.gif",
+        "https://media.giphy.com/media/3o6Zt481isNVuQI1l6/giphy.gif"
+    ]
+    selected_image = random.choice(kiss_images)
+    embed = discord.Embed(description=f"{ctx.author.mention} kisses {user.mention}!")
+    embed.set_image(url=selected_image)
+    await ctx.send(embed=embed)
+@bot.command()
+async def pat(ctx, user: discord.Member):
+    """Pat another user with a random image."""
+    pat_images = [
+        "https://media.giphy.com/media/109ltuoSQT212w/giphy.gif",
+        "https://media.giphy.com/media/ARSp9T7wwxNcs/giphy.gif",
+        "https://media.giphy.com/media/ye7OTQgwmVuVy/giphy.gif",
+        "https://media.giphy.com/media/L2z7dnOduqEow/giphy.gif",
+        "https://media.giphy.com/media/4HP0ddZnNVvKU/giphy.gif"
+    ]
+    selected_image = random.choice(pat_images)
+    embed = discord.Embed(description=f"{ctx.author.mention} pats {user.mention}!")
+    embed.set_image(url=selected_image)
+    await ctx.send(embed=embed)
+@bot.command()
+@is_staff()
+async def ban(ctx, user: discord.Member, *, reason=None):
+    """Ban a user from the server."""
+    if not ctx.author.guild_permissions.ban_members:
+        await ctx.send("❌ You don't have permission to ban members.")
+        return
+    try:
+        await user.ban(reason=reason)
+        await ctx.send(f"✅ {user.mention} has been banned. Reason: {reason}")
+    except Exception as e:
+        await ctx.send(f"❌ Failed to ban {user.mention}. Error: {e}")
 
 bot.run(f"{DISCORD_TOKEN}")
     
